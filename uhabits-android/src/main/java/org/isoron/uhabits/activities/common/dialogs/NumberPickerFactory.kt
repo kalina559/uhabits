@@ -24,6 +24,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.text.InputFilter
 import android.text.Spanned
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
@@ -45,7 +46,7 @@ class NumberPickerFactory
 @Inject constructor(
     @ActivityContext private val context: Context
 ) {
-
+    private val currentlyDisplayedDialogs: MutableList<AlertDialog> = mutableListOf()
     @SuppressLint("SetTextI18n")
     fun create(
         value: Double,
@@ -54,6 +55,18 @@ class NumberPickerFactory
         dateString: String,
         callback: ListHabitsBehavior.NumberPickerCallback
     ): AlertDialog {
+        Log.d("checking", "checking if previous dialogs exist ${currentlyDisplayedDialogs.count()}")
+        if(currentlyDisplayedDialogs.count() > 0){
+            currentlyDisplayedDialogs.forEach{
+                Log.d("checking", "cleared one of previous dialogs")
+
+                it.dismiss()
+            }
+            Log.d("checking", "cleared all previous dialogs")
+
+            //currentlyDisplayedDialogs.clear()
+        }
+
         val inflater = LayoutInflater.from(context)
         val view = inflater.inflate(R.layout.number_picker_dialog, null)
 
@@ -105,10 +118,14 @@ class NumberPickerFactory
             .setNegativeButton(android.R.string.cancel) { _, _ ->
                 callback.onNumberPickerDismissed()
             }
-            .setOnDismissListener {
-                callback.onNumberPickerDismissed()
-            }
             .create()
+
+        dialog.setOnDismissListener{
+            callback.onNumberPickerDismissed()
+            currentlyDisplayedDialogs.remove(dialog)
+            Log.d("checking", "dismissed dialog")
+
+        }
 
         dialog.setOnShowListener {
             showSoftInput(dialog, pickerInputText)
@@ -131,7 +148,8 @@ class NumberPickerFactory
             }
             false
         }
-
+        currentlyDisplayedDialogs.add(dialog)
+        Log.d("checking", "added dialog ${currentlyDisplayedDialogs.count()}")
         return dialog
     }
 
